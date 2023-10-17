@@ -64,7 +64,6 @@ class AuthenticationApiPiOne(
 
     suspend fun HttpResponse.parseSession(): UserSession {
         val text = bodyAsText()
-        println(text)
         return if (codec.decodeFromString<JsonObject>(text).isSuccess) {
             codec.decodeFromString(PiOneSingleDataSuccessResponse.serializer(UserSession.serializer()), text).obj
         } else {
