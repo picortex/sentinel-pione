@@ -1,13 +1,19 @@
 package sentinel
 
-import epsilon.Blob
+import epsilon.RawFile
+import epsilon.SystemFileReader
 import identifier.CorporateDto
 import identifier.OrganisationProfileApi
 import identifier.params.CorporateParams
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import kash.Currency
 import keep.load
 import koncurrent.later
@@ -32,15 +38,17 @@ class OrganisationProfileApiPiOneKtor (
     private val codec get() = config.codec
     private val cache get() = config.cache
 
+    private val reader = SystemFileReader()
+
     override fun update(params: CorporateParams) = config.scope.later {
         client.post(path().updateOrganisationProfile) {
             setBody(config.content(PiOneEndpoint.DataType.None, params))
         }.parseCorporate()
     }
 
-    override fun updateLogo(logo: Blob) = config.scope.later {
+    override fun updateLogo(logo: RawFile) = config.scope.later {
         val secret = cache.load(PiOneConstants.SECRET_CACHE_KEY, String.serializer())
-        val bytes = logo.readBytes().await()
+        val bytes = reader.read(logo).await()
 
         client.post(path().updateLogo) {
             header("secret", secret.await())

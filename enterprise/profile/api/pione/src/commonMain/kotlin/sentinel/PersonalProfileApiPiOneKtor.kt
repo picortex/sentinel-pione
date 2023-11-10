@@ -2,6 +2,8 @@ package sentinel
 
 import keep.load
 import epsilon.Blob
+import epsilon.RawFile
+import epsilon.SystemFileReader
 import identifier.IndividualDto
 import identifier.PersonalProfileApi
 import identifier.params.IndividualProfileParams
@@ -33,9 +35,11 @@ class PersonalProfileApiPiOneKtor(
     private val codec get() = config.codec
     private val cache get() = config.cache
 
-    override fun changeProfilePicture(file: Blob) = config.scope.later {
+    private val reader by lazy { SystemFileReader() }
+
+    override fun changeProfilePicture(file: RawFile) = config.scope.later {
         val secret = cache.load(PiOneConstants.SECRET_CACHE_KEY, String.serializer())
-        val bytes = file.readBytes().await()
+        val bytes = reader.read(file).await()
 
         client.post(path().updateProfilePicture) {
             header("secret", secret.await())
