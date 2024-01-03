@@ -1,28 +1,22 @@
 package sentinel
 
-import geo.GeoLocation
-import identifier.CorporateBranchDto
-import identifier.CorporateDto
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import keep.load
 import keep.save
 import koncurrent.Later
-import koncurrent.later.then
-import koncurrent.later.andThen
-import koncurrent.later.andZip
-import koncurrent.later.zip
-import koncurrent.later.catch
 import koncurrent.later
+import koncurrent.later.andThen
 import koncurrent.later.await
+import koncurrent.later.catch
+import koncurrent.later.then
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import pione.ApiConfigRestKtor
 import pione.PiOneConstants
 import pione.PiOneEndpoint
 import pione.PiOneResponseException
@@ -31,7 +25,6 @@ import pione.json
 import pione.response.PiOneFailureResponse
 import pione.response.PiOneSingleDataSuccessResponse
 import sentinel.params.PasswordResetParams
-import sentinel.params.SendPasswordResetParams
 import sentinel.params.SignInParams
 
 class AuthenticationApiPiOne(
