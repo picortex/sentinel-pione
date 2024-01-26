@@ -24,6 +24,11 @@ listOf(
 
 rootProject.name = "sentinel-pione"
 
+includeSubs(base = "sentinel-api-registration-email", "api/registration/email", "pione")
+includeSubs(base = "sentinel-api-enterprise-authentication-email", "api/enterprise/authentication/email", "pione")
+includeSubs(base = "sentinel-api-enterprise-profile", "api/enterprise/profile", "pione")
+
+// deprecated
 includeSubs(base = "sentinel-registration-api", path = "registration/api", "pione")
 includeSubs(base = "sentinel-enterprise-authentication-api", path = "enterprise/authentication/api", "pione")
 includeSubs(base = "sentinel-enterprise-profile-api", path = "enterprise/profile/api", "pione")
