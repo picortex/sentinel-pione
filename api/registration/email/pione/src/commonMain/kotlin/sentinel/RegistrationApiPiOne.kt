@@ -22,7 +22,7 @@ import sentinel.params.UserAccountParams
 
 class RegistrationApiPiOne(override val config: RegistrationApiPiOneConfig<PiOneEndpoint>) : PiOneApi by PiOneApi(config), EmailRegistrationApi {
 
-    override fun signUp(params: EmailSignUpParams): Later<EmailSignUpParams> = config.scope.later {
+    override fun signUp(params: EmailSignUpParams): Later<EmailRegistrationCandidateDto> = config.scope.later {
         val payload = codec.encodeToString(PiOneUnAuthorized(body = mapOf("email" to params.email, "name" to params.name)))
         val response = client.post(config.endpoint.signup) {
             setBody(payload)
@@ -32,7 +32,12 @@ class RegistrationApiPiOne(override val config: RegistrationApiPiOneConfig<PiOne
         val result = codec.decodeFromString(JsonObject.serializer(), text)
 
         if (result["status"]?.jsonPrimitive?.content == "ok") {
-            params
+            EmailRegistrationCandidateDto(
+                name=params.name,
+                email = params.email,
+                verified = false,
+                uid = ""
+            )
         } else {
             throw RuntimeException(result["error"]?.jsonPrimitive?.content)
         }
