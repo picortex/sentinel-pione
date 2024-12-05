@@ -10,6 +10,8 @@ import koncurrent.Later
 import koncurrent.TODOLater
 import koncurrent.later
 import koncurrent.later.await
+import koncurrent.later.catch
+import koncurrent.later.then
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -38,6 +40,7 @@ class AuthenticationApiPiOne(
         val text = client.post(path.signin) {
             setBody(params.toJson())
         }.bodyAsText()
+
         val resp = codec.decodeFromString<JsonObject>(text);
         if (resp.isSuccess) {
             text.toPiOneResponse().also {
@@ -45,18 +48,36 @@ class AuthenticationApiPiOne(
                 cache.save(PiOneConstants.CUSTOMER_DOMAIN_KEY, it.hostDetails.companyUrl).await()
             }
 
-            session().await()
+            remoteSessionThenCache().await()
         } else {
             throw PiOneResponseException("Incorrect username or password")
         }
     }
 
-    override fun session(): Later<UserSession> = config.scope.later {
+    override fun session(onFresh:((UserSession)->Unit)?): Later<UserSession> = localSession().then {
+        remoteSessionThenCache().then {
+            if (onFresh != null) {
+                onFresh(it)
+            }
+        }
+        it
+    }
+
+    private fun localSession(): Later<UserSession> = cache.load(PiOneConstants.SESSION_KEY, UserSession.serializer())
+
+    private fun remoteSession(): Later<UserSession> = config.scope.later {
         client.post(path().corporateSession) {
             val content = config.content(PiOneEndpoint.DataType.None, mapOf<String, String>())
             setBody(content)
         }.parseSession()
     }
+
+    private fun remoteSessionThenCache():Later<UserSession> = remoteSession().then {
+        cache.save(PiOneConstants.SESSION_KEY, it, UserSession.serializer())
+        it
+    }
+
+
 
     suspend fun HttpResponse.parseSession(): UserSession {
         val text = bodyAsText()
@@ -73,13 +94,14 @@ class AuthenticationApiPiOne(
 
     private fun String.toPiOneResponse() = codec.decodeFromString(PiOneSignInResponse.serializer(), this)
 
-    override fun signOut(): Later<UserSession> = config.scope.later {
+    override fun signOut(): Later<Unit> = config.scope.later {
         config.logger.info("Signing out")
-        val session = cache.load(PiOneConstants.SECRET_CACHE_KEY, UserSession.serializer()).await()
+//        val session = cache.load(PiOneConstants.SECRET_CACHE_KEY, UserSession.serializer()).await()
         cache.remove(PiOneConstants.SECRET_CACHE_KEY).await()
         cache.remove(PiOneConstants.CUSTOMER_DOMAIN_KEY).await()
+        cache.clear()
         config.logger.info("Signed out")
-        session
+//        session().await()
     }
 
     private fun parseError(text: String): PiOneResponseException = try {

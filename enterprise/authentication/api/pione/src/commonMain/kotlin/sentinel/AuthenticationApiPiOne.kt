@@ -40,6 +40,7 @@ class AuthenticationApiPiOne(
         val text = client.post(path.signin) {
             setBody(params.toJson())
         }.bodyAsText()
+        println("Received response: ${text}")
         val resp = codec.decodeFromString<JsonObject>(text);
         if (resp.isSuccess) {
             text.toPiOneResponse().also {
@@ -75,9 +76,8 @@ class AuthenticationApiPiOne(
 
     override fun signOut(): Later<Unit> {
         config.logger.info("Signing out")
-        return cache.remove(PiOneConstants.SECRET_CACHE_KEY).andThen {
-            cache.remove(PiOneConstants.CUSTOMER_DOMAIN_KEY)
-        }.then {
+
+        return cache.clear().then {
             config.logger.info("Signed out")
         }.catch {
             config.logger.error("Failed to sign out", it)
