@@ -28,7 +28,8 @@ import sentinel.params.EmailSignInParams
 import sentinel.params.PasswordResetParams
 
 class AuthenticationApiPiOne(
-    private val config: AuthenticationApiPiOneConfig<PiOneEndpoint>
+    private val config: AuthenticationApiPiOneConfig<PiOneEndpoint>,
+    private val onSignout:()->Later<*>
 ) : EmailAuthenticationApi {
     private val client get() = config.http
     private val path get() = config.endpoint
@@ -55,11 +56,11 @@ class AuthenticationApiPiOne(
     }
 
     override fun session(onFresh:((UserSession)->Unit)?): Later<UserSession> = localSession().then {
-        remoteSessionThenCache().then {
-            if (onFresh != null) {
-                onFresh(it)
-            }
-        }
+//        remoteSessionThenCache().then {
+//            if (onFresh != null) {
+//                onFresh(it)
+//            }
+//        }
         it
     }
 
@@ -99,7 +100,10 @@ class AuthenticationApiPiOne(
 //        val session = cache.load(PiOneConstants.SECRET_CACHE_KEY, UserSession.serializer()).await()
         cache.remove(PiOneConstants.SECRET_CACHE_KEY).await()
         cache.remove(PiOneConstants.CUSTOMER_DOMAIN_KEY).await()
-        cache.clear()
+        cache.clear().await()
+
+        onSignout().await()
+
         config.logger.info("Signed out")
 //        session().await()
     }
